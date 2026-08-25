@@ -6,6 +6,7 @@ const { renderMarkdown, cleanHtmlForDocx } = require('./markdown');
 const { getMainWindow, setRendererDirty } = require('./window');
 const recentFiles = require('./recentFiles');
 const { createMenu } = require('./menu');
+const fileWatcher = require('./watcher');
 
 function rememberRecentFile(filePath) {
   if (!filePath || !path.isAbsolute(filePath)) return;
@@ -64,6 +65,28 @@ function registerIpcHandlers() {
     if (!filePath || !path.isAbsolute(filePath)) return false;
     recentFiles.add(filePath);
     createMenu();
+    return true;
+  });
+
+  // Watch/unwatch the currently open file for external modifications
+  ipcMain.handle('set-watched-file', (_event, filePath) => {
+    if (!filePath || !path.isAbsolute(filePath) || !fs.existsSync(filePath)) {
+      fileWatcher.stopWatching();
+      return false;
+    }
+    if (fileWatcher.getWatchedPath() === filePath) return true;
+    fileWatcher.watchFile(filePath, () => {
+      const win = getMainWindow();
+      if (!win) return;
+      let content;
+      try {
+        content = fs.readFileSync(filePath, 'utf-8');
+      } catch {
+        win.webContents.send('file-deleted-on-disk', filePath);
+        return;
+      }
+      win.webContents.send('file-changed-on-disk', { filePath, content });
+    });
     return true;
   });
 

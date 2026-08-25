@@ -9,6 +9,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveFileAs: (content, sourcePath) => ipcRenderer.invoke('save-file-as', { content, sourcePath }),
   notifyDirtyState: (dirty) => ipcRenderer.send('dirty-state-changed', dirty),
   addRecentFile: (filePath) => ipcRenderer.invoke('add-recent-file', filePath),
+  setWatchedFile: (filePath) => ipcRenderer.invoke('set-watched-file', filePath),
+  onFileChangedOnDisk: (callback) => {
+    ipcRenderer.removeAllListeners('file-changed-on-disk');
+    ipcRenderer.on('file-changed-on-disk', (_event, payload) => callback(payload));
+  },
+  onFileDeletedOnDisk: (callback) => {
+    ipcRenderer.removeAllListeners('file-deleted-on-disk');
+    ipcRenderer.on('file-deleted-on-disk', (_event, filePath) => callback(filePath));
+  },
   onTriggerOpen: (callback) => {
     ipcRenderer.removeAllListeners('trigger-open-file');
     ipcRenderer.on('trigger-open-file', () => callback());

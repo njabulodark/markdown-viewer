@@ -4,6 +4,7 @@ const { createWindow, getMainWindow, sendFileToRenderer, handleBeforeQuit } = re
 const { createMenu } = require('./main/menu');
 const { registerIpcHandlers } = require('./main/ipc');
 const recentFiles = require('./main/recentFiles');
+const fileWatcher = require('./main/watcher');
 
 let startupFilePath = null;
 
@@ -77,6 +78,7 @@ if (!gotTheLock) {
   });
 
   app.on('window-all-closed', () => {
+    fileWatcher.stopWatching();
     if (process.platform !== 'darwin') {
       app.quit();
     }

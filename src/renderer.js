@@ -91,6 +91,14 @@ async function confirmIfDirty(actionLabel) {
   return proceed;
 }
 
+function isAbsoluteFsPath(p) {
+  return typeof p === 'string' && (p.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(p));
+}
+
+function updateWatchedFile() {
+  window.electronAPI.setWatchedFile(isAbsoluteFsPath(currentFilePath) ? currentFilePath : null);
+}
+
 function toggleLogPanel() {
   logPanel.classList.toggle('hidden');
 }
@@ -207,6 +215,7 @@ async function renderMarkdown(content, filePath) {
 
     lastSavedContent = content;
     updateDirtyIndicator();
+    updateWatchedFile();
   } catch (err) {
     statusText.textContent = `Error rendering: ${err.message}`;
   }
@@ -430,6 +439,7 @@ async function saveAs() {
       statusText.textContent = `Saved: ${currentFileName}`;
       addLog(`Saved As: ${currentFileName} (${result.filePath})`, 'success');
       window.electronAPI.addRecentFile(result.filePath);
+      updateWatchedFile();
     } else if (result.cancelled) {
       addLog('Save As cancelled', 'info');
     }
@@ -566,6 +576,30 @@ window.electronAPI.onOpenFileFromArgv(async (filePath) => {
   } catch (err) {
     statusText.textContent = `Error: ${err.message}`;
   }
+});
+
+window.electronAPI.onFileChangedOnDisk(async ({ filePath, content }) => {
+  if (filePath !== currentFilePath) return;
+  if (content === currentContent || content === lastSavedContent) return;
+  if (computeDirty()) {
+    statusText.textContent = 'File changed on disk — your unsaved edits are kept';
+    addLog(`External change detected while editing: ${currentFileName}`, 'info');
+    return;
+  }
+  try {
+    await renderMarkdown(content, filePath);
+    statusText.textContent = 'Reloaded from disk';
+    addLog(`Reloaded from disk: ${currentFileName}`, 'info');
+  } catch (err) {
+    addLog(`Reload error: ${err.message}`, 'error');
+  }
+});
+
+window.electronAPI.onFileDeletedOnDisk((filePath) => {
+  if (filePath !== currentFilePath) return;
+  updateWatchedFile();
+  statusText.textContent = `${currentFileName} was deleted or moved on disk`;
+  addLog(`File missing on disk: ${filePath}`, 'error');
 });
 
 document.addEventListener('keydown', (e) => {
