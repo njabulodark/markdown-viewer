@@ -7,18 +7,56 @@
 :root {
   --bg-primary: #FAF8F5;
   --bg-toolbar: rgba(250, 248, 245, 0.92);
+  --bg-overlay: rgba(250, 248, 245, 0.92);
+  --bg-code: rgba(0, 0, 0, 0.04);
+  --bg-pre: #2d2d2d;
+  --pre-text: #e4e4e4;
   --text-primary: #1a1a1a;
   --text-secondary: #6b6b6b;
   --text-tertiary: #9e9e9e;
+  --text-body: #2d2d2d;
+  --text-body-soft: #4a4a4a;
   --accent: #c8553d;
   --accent-hover: #b3472f;
+  --accent-soft: rgba(200, 85, 61, 0.1);
+  --accent-faint: rgba(200, 85, 61, 0.05);
   --border: rgba(0, 0, 0, 0.06);
   --border-strong: rgba(0, 0, 0, 0.1);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --hover-bg: rgba(0, 0, 0, 0.05);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.12);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
+  --error: #d9381e;
   --radius: 8px;
   --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: 'Lora', Georgia, 'Times New Roman', serif;
+}
+
+:root[data-theme="dark"] {
+  --bg-primary: #201d1b;
+  --bg-toolbar: rgba(32, 29, 27, 0.92);
+  --bg-overlay: rgba(32, 29, 27, 0.92);
+  --bg-code: rgba(255, 255, 255, 0.08);
+  --bg-pre: #171514;
+  --pre-text: #ded9d2;
+  --text-primary: #ece7e1;
+  --text-secondary: #b3aca4;
+  --text-tertiary: #837c74;
+  --text-body: #d6d0c8;
+  --text-body-soft: #bdb6ad;
+  --accent: #e07a5f;
+  --accent-hover: #ec8d74;
+  --accent-soft: rgba(224, 122, 95, 0.16);
+  --accent-faint: rgba(224, 122, 95, 0.09);
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --hover-bg: rgba(255, 255, 255, 0.07);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.14);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.24);
+  --error: #ff6b52;
 }
 
 html {
@@ -122,12 +160,12 @@ body {
 }
 
 .toolbar-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--hover-bg);
   color: var(--text-primary);
 }
 
 .toolbar-btn.active {
-  background: rgba(200, 85, 61, 0.1);
+  background: var(--accent-soft);
   color: var(--accent);
 }
 
@@ -220,7 +258,7 @@ body {
 }
 
 .win-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--hover-bg);
   color: var(--text-primary);
 }
 
@@ -233,7 +271,7 @@ body {
 .drop-overlay {
   position: fixed;
   inset: 48px 0 28px 0;
-  background: rgba(250, 248, 245, 0.92);
+  background: var(--bg-overlay);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -276,12 +314,12 @@ body {
 }
 
 #content-area::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
 #content-area::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.18);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* === Welcome Screen === */
@@ -392,7 +430,7 @@ body {
   font-family: var(--font-serif);
   line-height: 1.75;
   margin-bottom: 1.2em;
-  color: #2d2d2d;
+  color: var(--text-body);
 }
 
 .markdown-body a {
@@ -418,14 +456,14 @@ body {
   margin: 1.5em 0;
   padding: 0.5em 1em;
   border-left: 3px solid var(--accent);
-  background: rgba(200, 85, 61, 0.04);
+  background: var(--accent-faint);
   border-radius: 0 var(--radius) var(--radius) 0;
 }
 
 .markdown-body blockquote p {
   margin-bottom: 0;
   font-style: italic;
-  color: #4a4a4a;
+  color: var(--text-body-soft);
 }
 
 .markdown-body ul,
@@ -438,7 +476,7 @@ body {
   font-family: var(--font-serif);
   line-height: 1.7;
   margin-bottom: 0.3em;
-  color: #2d2d2d;
+  color: var(--text-body);
 }
 
 .markdown-body ul li::marker {
@@ -448,7 +486,7 @@ body {
 .markdown-body code {
   font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
   font-size: 0.88em;
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--bg-code);
   padding: 2px 6px;
   border-radius: 4px;
   color: var(--accent);
@@ -456,7 +494,7 @@ body {
 
 .markdown-body pre {
   margin: 1.5em 0;
-  background: #2d2d2d;
+  background: var(--bg-pre);
   border-radius: var(--radius);
   padding: 16px 20px;
   overflow-x: auto;
@@ -466,7 +504,7 @@ body {
 .markdown-body pre code {
   background: none;
   padding: 0;
-  color: #e4e4e4;
+  color: var(--pre-text);
   font-size: 13px;
   line-height: 1.6;
   border-radius: 0;
@@ -558,12 +596,12 @@ body {
 }
 
 .statusbar-log-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--hover-bg);
   color: var(--text-primary);
 }
 
 .statusbar-log-btn.has-error {
-  color: #d9381e;
+  color: var(--error);
   font-weight: 500;
 }
 
@@ -742,12 +780,12 @@ body {
 }
 
 .markdown-body-split::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
 .markdown-body-split::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.18);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* === Export Dropdown === */
@@ -778,7 +816,7 @@ body {
 }
 
 .export-menu-item:hover {
-  background-color: rgba(200, 85, 61, 0.08);
+  background-color: var(--accent-soft);
 }
 
 /* === Utility === */
@@ -788,6 +826,22 @@ body {
 
 /* === Print Styles for PDF Export === */
 @media print {
+  :root,
+  :root[data-theme="dark"] {
+    --bg-primary: #ffffff;
+    --text-primary: #000000;
+    --text-body: #2d2d2d;
+    --text-body-soft: #4a4a4a;
+    --accent: #c8553d;
+    --border: rgba(0, 0, 0, 0.06);
+    --border-strong: rgba(0, 0, 0, 0.1);
+    --bg-code: rgba(0, 0, 0, 0.04);
+    --bg-pre: #2d2d2d;
+    --pre-text: #e4e4e4;
+    --shadow-sm: none;
+    --shadow-md: none;
+  }
+
   body {
     background: #ffffff !important;
     color: #000000 !important;

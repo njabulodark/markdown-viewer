@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('file-deleted-on-disk');
     ipcRenderer.on('file-deleted-on-disk', (_event, filePath) => callback(filePath));
   },
+  setWindowBackground: (isDark) => ipcRenderer.send('set-window-background', isDark),
   onTriggerOpen: (callback) => {
     ipcRenderer.removeAllListeners('trigger-open-file');
     ipcRenderer.on('trigger-open-file', () => callback());

@@ -8,6 +8,9 @@ const recentFiles = require('./recentFiles');
 const { createMenu } = require('./menu');
 const fileWatcher = require('./watcher');
 
+const WINDOW_BG_LIGHT = '#FAF8F5';
+const WINDOW_BG_DARK = '#201D1B';
+
 function rememberRecentFile(filePath) {
   if (!filePath || !path.isAbsolute(filePath)) return;
   if (recentFiles.list()[0] === filePath) return;
@@ -244,6 +247,14 @@ function registerIpcHandlers() {
   // Renderer dirty-state reporting
   ipcMain.on('dirty-state-changed', (_event, dirty) => {
     setRendererDirty(dirty);
+  });
+
+  // Sync native window background with renderer theme
+  ipcMain.on('set-window-background', (_event, isDark) => {
+    const win = getMainWindow();
+    if (win && !win.isDestroyed()) {
+      win.setBackgroundColor(isDark ? WINDOW_BG_DARK : WINDOW_BG_LIGHT);
+    }
   });
 
   // Window controls

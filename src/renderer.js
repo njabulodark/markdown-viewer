@@ -31,6 +31,43 @@ const btnCopyLogs = document.getElementById('btn-copy-logs');
 const btnClearLogs = document.getElementById('btn-clear-logs');
 const btnCloseLogs = document.getElementById('btn-close-logs');
 
+const THEME_KEY = 'markdown-viewer-theme';
+const btnTheme = document.getElementById('btn-theme');
+const iconMoon = document.getElementById('theme-icon-moon');
+const iconSun = document.getElementById('theme-icon-sun');
+
+function applyTheme(theme, persist) {
+  document.documentElement.dataset.theme = theme;
+  iconMoon.classList.toggle('hidden', theme === 'dark');
+  iconSun.classList.toggle('hidden', theme !== 'dark');
+  if (persist) {
+    localStorage.setItem(THEME_KEY, theme);
+  }
+  window.electronAPI.setWindowBackground(theme === 'dark');
+}
+
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === 'dark' || saved === 'light') {
+    applyTheme(saved, false);
+  } else {
+    applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light', false);
+  }
+  const media = window.matchMedia('(prefers-color-scheme: dark)');
+  media.addEventListener('change', (e) => {
+    if (!localStorage.getItem(THEME_KEY)) {
+      applyTheme(e.matches ? 'dark' : 'light', false);
+    }
+  });
+}
+
+btnTheme.addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(next, true);
+});
+
+initTheme();
+
 let currentFilePath = null;
 let currentFileName = '';
 let isDirty = false;
