@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="katex.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Title bar -->
+    <div class="titlebar">
+      <div class="titlebar-drag"></div>
+      <div class="titlebar-left">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+        <span class="app-title">Markdown Viewer</span>
+      </div>
+      <div class="titlebar-center">
+        <span id="file-breadcrumb" class="breadcrumb"></span>
+      </div>
+      <div class="titlebar-right">
+        <button id="btn-open" class="toolbar-btn" title="Open File (Ctrl+O)" style="-webkit-app-region: no-drag;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </button>
+        <button id="btn-edit" class="toolbar-btn hidden" title="Edit Markdown (Ctrl+E)" style="-webkit-app-region: no-drag;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button id="btn-save" class="toolbar-btn hidden" title="Save & Render (Ctrl+S)" style="-webkit-app-region: no-drag;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="9 3 15 3 15 9"/>
+          </svg>
+        </button>
+        <button id="btn-split" class="toolbar-btn hidden" title="Toggle Split View (Ctrl+\)" style="-webkit-app-region: no-drag;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <line x1="12" y1="3" x2="12" y2="21"/>
+          </svg>
+        </button>
+        <div class="export-dropdown hidden" id="export-dropdown" style="-webkit-app-region: no-drag;">
+          <button id="btn-export" class="toolbar-btn" title="Export" style="-webkit-app-region: no-drag;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </button>
+          <div id="export-menu" class="export-menu hidden">
+            <div id="export-pdf" class="export-menu-item">Export as PDF</div>
+            <div id="export-docx" class="export-menu-item">Export as DOCX</div>
+          </div>
+        </div>
+        <div class="font-controls hidden" id="font-controls" style="-webkit-app-region: no-drag;">
+          <button id="btn-font-down" class="toolbar-btn font-btn" title="Decrease Font Size">A−</button>
+          <span id="font-size-label" class="font-size-label">16px</span>
+          <button id="btn-font-up" class="toolbar-btn font-btn" title="Increase Font Size">A+</button>
+        </div>
+        <div class="window-controls" style="-webkit-app-region: no-drag;">
+          <button id="btn-minimize" class="win-btn" title="Minimize" style="-webkit-app-region: no-drag;">
+            <svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+          <button id="btn-maximize" class="win-btn" title="Maximize" style="-webkit-app-region: no-drag;">
+            <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+          <button id="btn-close" class="win-btn win-btn-close" title="Close" style="-webkit-app-region: no-drag;">
+            <svg width="10" height="10" viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="2" x2="2" y2="8" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drop zone overlay -->
+    <div id="drop-overlay" class="drop-overlay hidden">
+      <div class="drop-content">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span>Drop Markdown file here</span>
+      </div>
+    </div>
+
+    <!-- Main content area -->
+    <main id="content-area">
+      <!-- Welcome screen -->
+      <div id="welcome-screen" class="welcome">
+        <div class="welcome-inner">
+          <svg class="welcome-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <h1 class="welcome-title">Open a Markdown file</h1>
+          <p class="welcome-subtitle">Drag & drop a .md file here, or use the button above</p>
+          <button id="btn-open-welcome" class="welcome-btn">Browse Files</button>
+        </div>
+      </div>
+
+      <!-- Split pane container -->
+      <div id="split-pane" class="split-pane hidden">
+        <textarea id="markdown-editor-split" class="markdown-editor markdown-editor-split" spellcheck="false"></textarea>
+        <div class="split-divider"></div>
+        <div id="markdown-content-split" class="markdown-body markdown-body-split"></div>
+      </div>
+
+      <!-- Markdown editor (full-screen mode) -->
+      <textarea id="markdown-editor" class="markdown-editor hidden" spellcheck="false"></textarea>
+
+      <!-- Rendered markdown (full-screen mode) -->
+      <div id="markdown-content" class="markdown-body hidden"></div>
+    </main>
+
+    <!-- Diagnostic Log Panel -->
+    <div id="log-panel" class="log-panel hidden">
+      <div class="log-panel-header">
+        <span class="log-panel-title">Diagnostic Logs</span>
+        <div class="log-panel-actions">
+          <button id="btn-copy-logs" class="log-btn" title="Copy logs to clipboard">Copy</button>
+          <button id="btn-clear-logs" class="log-btn" title="Clear logs">Clear</button>
+          <button id="btn-close-logs" class="log-btn log-btn-close" title="Close panel">✕</button>
+        </div>
+      </div>
+      <div id="log-entries" class="log-entries"></div>
+    </div>
+
+    <!-- Status bar -->
+    <footer class="statusbar">
+      <div class="statusbar-left">
+        <span id="status-text">Ready</span>
+      </div>
+      <div class="statusbar-right">
+        <button id="btn-toggle-logs" class="statusbar-log-btn" title="Toggle Diagnostic Logs">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          Logs (<span id="log-count">0</span>)
+        </button>
+        <span id="word-count"></span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

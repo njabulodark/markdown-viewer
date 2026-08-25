@@ -1,0 +1,66 @@
+{
+  "name": "markdown-viewer",
+  "version": "1.0.1",
+  "description": "A clean Markdown viewer built with Electron",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "test": "node --test \"test/*.test.js\"",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "markdown",
+    "viewer",
+    "electron"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "html-to-docx": "^1.8.0",
+    "katex": "^0.17.0",
+    "marked": "^18.0.3",
+    "marked-katex-extension": "^5.1.10"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "electron": "^42.0.1",
+    "electron-builder": "^26.8.1",
+    "eslint": "^10.9.1",
+    "globals": "^17.11.0"
+  },
+  "build": {
+    "appId": "com.markdownviewer.app",
+    "productName": "Markdown Viewer",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "main/**/*",
+      "preload.js",
+      "src/**/*",
+      "node_modules/katex/**/*",
+      "node_modules/marked-katex-extension/**/*",
+      "node_modules/html-to-docx/**/*"
+    ],
+    "fileAssociations": [
+      {
+        "ext": "md",
+        "name": "Markdown file",
+        "role": "viewer"
+      },
+      {
+        "ext": "markdown",
+        "name": "Markdown file",
+        "role": "viewer"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}
