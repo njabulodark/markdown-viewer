@@ -87,14 +87,27 @@ npm run build
 
 ```
 markdown-viewer/
-├── main.js            # Electron main process: window, menus, IPC, PDF/DOCX export
+├── main.js            # Electron entry point: app lifecycle, single-instance lock
+├── main/
+│   ├── markdown.js    # marked/KaTeX setup, renderMarkdown(), cleanHtmlForDocx()
+│   ├── window.js      # BrowserWindow creation and accessors
+│   ├── menu.js        # Application menu
+│   └── ipc.js         # All IPC handlers (file IO, PDF/DOCX export, window controls)
 ├── preload.js         # Context-isolated bridge exposing window.electronAPI
 ├── src/
 │   ├── index.html     # App UI (title bar, content area, export menu)
 │   ├── renderer.js    # UI logic, markdown rendering, export triggers
 │   ├── style.css      # App styling + print styles used for PDF export
 │   └── katex.css      # KaTeX stylesheet for math rendering
+├── test/              # Unit tests (node --test)
 └── package.json       # Scripts, dependencies, electron-builder config
+```
+
+## Lint & tests
+
+```bash
+npm run lint   # ESLint over main process, preload, renderer, tests
+npm test       # unit tests (node --test), covers markdown rendering + DOCX cleanup
 ```
 
 ## Troubleshooting
