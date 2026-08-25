@@ -378,6 +378,35 @@ async function saveAndRender() {
   document.getElementById('content-area').scrollTop = 0;
 }
 
+async function saveAs() {
+  const content = getLatestContent();
+  if (!content) {
+    addLog('Nothing to save', 'info');
+    return;
+  }
+  closeExportMenu();
+  try {
+    const result = await window.electronAPI.saveFileAs(content, currentFilePath);
+    if (result.success) {
+      currentFilePath = result.filePath;
+      currentContent = content;
+      const fileName = result.filePath.split(/[\\/]/).pop();
+      fileBreadcrumb.textContent = fileName;
+      fileBreadcrumb.title = result.filePath;
+      btnEdit.classList.remove('hidden');
+      btnSplit.classList.remove('hidden');
+      fontControls.classList.remove('hidden');
+      exportDropdown.classList.remove('hidden');
+      statusText.textContent = `Saved: ${fileName}`;
+      addLog(`Saved As: ${fileName} (${result.filePath})`, 'success');
+    } else if (result.cancelled) {
+      addLog('Save As cancelled', 'info');
+    }
+  } catch (err) {
+    addLog(`Save As Error: ${err.message}`, 'error');
+  }
+}
+
 async function toggleSplitView() {
   isSplitView = !isSplitView;
   btnSplit.classList.toggle('active', isSplitView);
@@ -486,6 +515,7 @@ document.addEventListener('click', (e) => {
 markdownEditorSplit.addEventListener('input', updateSplitPreview);
 
 window.electronAPI.onTriggerOpen(openFile);
+window.electronAPI.onTriggerSaveAs(saveAs);
 window.electronAPI.onTriggerExportPDF(exportPDF);
 window.electronAPI.onTriggerExportDocx(exportDocx);
 

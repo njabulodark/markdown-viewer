@@ -62,6 +62,49 @@ function registerIpcHandlers() {
     }
   });
 
+  // Save file to disk via Save As dialog
+  ipcMain.handle('save-file-as', async (_event, { content, sourcePath }) => {
+    const win = getMainWindow();
+    if (!win) {
+      throw new Error('Window not available');
+    }
+    let defaultPath = 'document.md';
+    if (sourcePath && !sourcePath.startsWith('/')) {
+      const base = path.basename(sourcePath, path.extname(sourcePath));
+      if (path.isAbsolute(sourcePath)) {
+        defaultPath = path.join(path.dirname(sourcePath), `${base}.md`);
+      } else {
+        defaultPath = `${base}.md`;
+      }
+    }
+    // Bring the frameless window to the top so the native Save dialog is not
+    // hidden behind it (a known issue on Windows with frame: false windows).
+    win.setAlwaysOnTop(true);
+    win.focus();
+    let result;
+    try {
+      result = await dialog.showSaveDialog(win, {
+        title: 'Save As',
+        filters: [
+          { name: 'Markdown Files', extensions: ['md', 'markdown', 'txt'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+        defaultPath,
+      });
+    } finally {
+      win.setAlwaysOnTop(false);
+    }
+    if (result.canceled || !result.filePath) return { success: false, cancelled: true };
+    try {
+      fs.writeFileSync(result.filePath, content, 'utf-8');
+      return { success: true, filePath: result.filePath };
+    } catch (err) {
+      const message = `Failed to save file: ${err.message}`;
+      dialog.showErrorBox('Save Failed', message);
+      throw new Error(message, { cause: err });
+    }
+  });
+
   // Export to PDF
   ipcMain.handle('export-pdf', async (_event, sourcePath) => {
     const win = getMainWindow();

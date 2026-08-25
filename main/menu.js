@@ -16,6 +16,15 @@ function createMenu() {
         },
         { type: 'separator' },
         {
+          label: 'Save As...',
+          accelerator: 'CmdOrCtrl+Shift+S',
+          click: () => {
+            const win = getMainWindow();
+            if (win) win.webContents.send('trigger-save-as');
+          },
+        },
+        { type: 'separator' },
+        {
           label: 'Export PDF...',
           click: () => {
             const win = getMainWindow();

@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
   renderMarkdown: (md) => ipcRenderer.invoke('render-markdown', md),
   saveFile: (filePath, content) => ipcRenderer.invoke('save-file', { filePath, content }),
+  saveFileAs: (content, sourcePath) => ipcRenderer.invoke('save-file-as', { content, sourcePath }),
   onTriggerOpen: (callback) => {
     ipcRenderer.removeAllListeners('trigger-open-file');
     ipcRenderer.on('trigger-open-file', () => callback());
@@ -22,6 +23,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onTriggerExportPDF: (callback) => {
     ipcRenderer.removeAllListeners('trigger-export-pdf');
     ipcRenderer.on('trigger-export-pdf', () => callback());
+  },
+  onTriggerSaveAs: (callback) => {
+    ipcRenderer.removeAllListeners('trigger-save-as');
+    ipcRenderer.on('trigger-save-as', () => callback());
   },
   onTriggerExportDocx: (callback) => {
     ipcRenderer.removeAllListeners('trigger-export-docx');
