@@ -4,6 +4,15 @@ const fs = require('fs');
 const HTMLtoDOCX = require('html-to-docx');
 const { renderMarkdown, cleanHtmlForDocx } = require('./markdown');
 const { getMainWindow, setRendererDirty } = require('./window');
+const recentFiles = require('./recentFiles');
+const { createMenu } = require('./menu');
+
+function rememberRecentFile(filePath) {
+  if (!filePath || !path.isAbsolute(filePath)) return;
+  if (recentFiles.list()[0] === filePath) return;
+  recentFiles.add(filePath);
+  createMenu();
+}
 
 function registerIpcHandlers() {
   // Open file dialog
@@ -21,6 +30,7 @@ function registerIpcHandlers() {
     const filePath = result.filePaths[0];
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
+      rememberRecentFile(filePath);
       return { content, filePath };
     } catch (err) {
       throw new Error(`Failed to read file: ${err.message}`, { cause: err });
@@ -31,6 +41,7 @@ function registerIpcHandlers() {
   ipcMain.handle('read-file', async (_event, filePath) => {
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
+      rememberRecentFile(filePath);
       return { content, filePath };
     } catch (err) {
       throw new Error(`Failed to read file: ${err.message}`, { cause: err });
@@ -41,10 +52,19 @@ function registerIpcHandlers() {
   ipcMain.handle('open-file', async (_event, filePath) => {
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
+      rememberRecentFile(filePath);
       return { content, filePath };
     } catch (err) {
       throw new Error(`Failed to read file: ${err.message}`, { cause: err });
     }
+  });
+
+  // Track a file saved via Save As in the recent-files list
+  ipcMain.handle('add-recent-file', (_event, filePath) => {
+    if (!filePath || !path.isAbsolute(filePath)) return false;
+    recentFiles.add(filePath);
+    createMenu();
+    return true;
   });
 
   // Render markdown to HTML

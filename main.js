@@ -1,7 +1,9 @@
 const { app } = require('electron');
+const path = require('path');
 const { createWindow, getMainWindow, sendFileToRenderer, handleBeforeQuit } = require('./main/window');
 const { createMenu } = require('./main/menu');
 const { registerIpcHandlers } = require('./main/ipc');
+const recentFiles = require('./main/recentFiles');
 
 let startupFilePath = null;
 
@@ -26,6 +28,8 @@ if (!gotTheLock) {
   app.on('second-instance', (_event, argv) => {
     const filePath = findMarkdownArg(argv);
     if (filePath) {
+      recentFiles.add(filePath);
+      createMenu();
       sendFileToRenderer(filePath);
     }
     const win = getMainWindow();
@@ -36,9 +40,11 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
+    recentFiles.init(path.join(app.getPath('userData'), 'recent-files.json'));
     const cliArg = findMarkdownArg(process.argv);
     if (cliArg) {
       startupFilePath = cliArg;
+      recentFiles.add(cliArg);
     }
     createWindow(handleStartupFile);
     createMenu();
@@ -46,6 +52,8 @@ if (!gotTheLock) {
   });
 
   app.on('open-file', (_event, filePath) => {
+    recentFiles.add(filePath);
+    createMenu();
     const win = getMainWindow();
     if (win) {
       sendFileToRenderer(filePath);

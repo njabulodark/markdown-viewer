@@ -1,49 +1,80 @@
 const { Menu } = require('electron');
+const fs = require('fs');
+const recentFiles = require('./recentFiles');
 const { getMainWindow } = require('./window');
 
-function createMenu() {
-  const template = [
+function sendToActiveWindow(channel) {
+  const win = getMainWindow();
+  if (win) win.webContents.send(channel);
+}
+
+function openRecentFile(filePath) {
+  const win = getMainWindow();
+  if (!win) return;
+  win.webContents.send('open-file-argv', filePath);
+  if (win.isMinimized()) win.restore();
+  win.focus();
+}
+
+function buildOpenRecentSubmenu() {
+  const recents = recentFiles.list();
+  return [
+    ...recents
+      .filter((filePath) => fs.existsSync(filePath))
+      .map((filePath) => ({
+        label: filePath,
+        click: () => openRecentFile(filePath),
+      })),
+    { type: 'separator' },
+    {
+      label: 'Clear Recently Opened',
+      enabled: recents.length > 0,
+      click: () => {
+        recentFiles.clear();
+        createMenu();
+      },
+    },
+  ];
+}
+
+function buildTemplate() {
+  return [
     {
       label: 'File',
       submenu: [
         {
           label: 'Open...',
           accelerator: 'CmdOrCtrl+O',
-          click: () => {
-            const win = getMainWindow();
-            if (win) win.webContents.send('trigger-open-file');
-          },
+          click: () => sendToActiveWindow('trigger-open-file'),
+        },
+        {
+          label: 'Open Recent',
+          submenu: buildOpenRecentSubmenu(),
         },
         { type: 'separator' },
         {
           label: 'Save As...',
           accelerator: 'CmdOrCtrl+Shift+S',
-          click: () => {
-            const win = getMainWindow();
-            if (win) win.webContents.send('trigger-save-as');
-          },
+          click: () => sendToActiveWindow('trigger-save-as'),
         },
         { type: 'separator' },
         {
           label: 'Export PDF...',
-          click: () => {
-            const win = getMainWindow();
-            if (win) win.webContents.send('trigger-export-pdf');
-          },
+          click: () => sendToActiveWindow('trigger-export-pdf'),
         },
         {
           label: 'Export DOCX...',
-          click: () => {
-            const win = getMainWindow();
-            if (win) win.webContents.send('trigger-export-docx');
-          },
+          click: () => sendToActiveWindow('trigger-export-docx'),
         },
         { type: 'separator' },
         { role: 'quit' },
       ],
     },
   ];
-  const menu = Menu.buildFromTemplate(template);
+}
+
+function createMenu() {
+  const menu = Menu.buildFromTemplate(buildTemplate());
   Menu.setApplicationMenu(menu);
 }
 

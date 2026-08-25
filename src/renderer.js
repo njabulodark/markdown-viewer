@@ -429,6 +429,7 @@ async function saveAs() {
       exportDropdown.classList.remove('hidden');
       statusText.textContent = `Saved: ${currentFileName}`;
       addLog(`Saved As: ${currentFileName} (${result.filePath})`, 'success');
+      window.electronAPI.addRecentFile(result.filePath);
     } else if (result.cancelled) {
       addLog('Save As cancelled', 'info');
     }

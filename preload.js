@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveFile: (filePath, content) => ipcRenderer.invoke('save-file', { filePath, content }),
   saveFileAs: (content, sourcePath) => ipcRenderer.invoke('save-file-as', { content, sourcePath }),
   notifyDirtyState: (dirty) => ipcRenderer.send('dirty-state-changed', dirty),
+  addRecentFile: (filePath) => ipcRenderer.invoke('add-recent-file', filePath),
   onTriggerOpen: (callback) => {
     ipcRenderer.removeAllListeners('trigger-open-file');
     ipcRenderer.on('trigger-open-file', () => callback());
