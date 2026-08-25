@@ -49,8 +49,20 @@ any change to `main.js`, `preload.js`, or `src/*` requires restarting `npm start
 
 - **Open a file:** click the folder button, press `Ctrl+O`, drag & drop a file, or
   double-click a `.md` file (file association is registered by the installer).
-- **Edit:** `Ctrl+E` toggles the editor; `Ctrl+S` saves and re-renders.
+- **Recent files:** `File` → `Open Recent` keeps the last 10 opened documents.
+- **Edit:** `Ctrl+E` toggles the editor; `Ctrl+S` saves and re-renders. `Tab` inserts
+  two spaces (`Shift+Tab` outdents) in both editors.
+- **Save As:** `Ctrl+Shift+S` (or `File` → `Save As...`) writes the current content to
+  a new file — required before saving dropped files, which have no path yet.
 - **Split view:** `Ctrl+\` toggles a side-by-side editor + preview.
+- **Zoom:** `Ctrl+=` / `Ctrl+-` scale the UI; reset from the `View` menu.
+- **Theme:** the moon/sun button in the title bar toggles dark mode. On first launch
+  the app follows your OS setting; a manual toggle overrides it (per app instance).
+  PDF exports always print with light styling.
+- **Live reload:** if the open file changes on disk it is reloaded automatically when
+  you have no unsaved edits; otherwise a status-bar notice appears and your edits win.
+- **Unsaved changes:** the breadcrumb shows a `•` dot while dirty; closing the window
+  or opening another file asks for confirmation first.
 - **Export:** click the export (up-arrow) button in the title bar → **Export as PDF**
   or **Export as DOCX**. (Also available from the `File` menu.)
 - **Diagnostics:** the status bar has a **Logs** button that records every action and
