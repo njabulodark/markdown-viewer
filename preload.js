@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   renderMarkdown: (md) => ipcRenderer.invoke('render-markdown', md),
   saveFile: (filePath, content) => ipcRenderer.invoke('save-file', { filePath, content }),
   saveFileAs: (content, sourcePath) => ipcRenderer.invoke('save-file-as', { content, sourcePath }),
+  notifyDirtyState: (dirty) => ipcRenderer.send('dirty-state-changed', dirty),
   onTriggerOpen: (callback) => {
     ipcRenderer.removeAllListeners('trigger-open-file');
     ipcRenderer.on('trigger-open-file', () => callback());

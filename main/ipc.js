@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const HTMLtoDOCX = require('html-to-docx');
 const { renderMarkdown, cleanHtmlForDocx } = require('./markdown');
-const { getMainWindow } = require('./window');
+const { getMainWindow, setRendererDirty } = require('./window');
 
 function registerIpcHandlers() {
   // Open file dialog
@@ -196,6 +196,11 @@ function registerIpcHandlers() {
       dialog.showErrorBox('DOCX Export Failed', message);
       throw new Error(message, { cause: err });
     }
+  });
+
+  // Renderer dirty-state reporting
+  ipcMain.on('dirty-state-changed', (_event, dirty) => {
+    setRendererDirty(dirty);
   });
 
   // Window controls

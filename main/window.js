@@ -1,13 +1,45 @@
-const { BrowserWindow } = require('electron');
+const { BrowserWindow, dialog, app } = require('electron');
 const path = require('path');
 
 let mainWindow = null;
+let rendererDirty = false;
+let forceClose = false;
 
 function getMainWindow() {
   if (mainWindow && !mainWindow.isDestroyed()) {
     return mainWindow;
   }
   return null;
+}
+
+function setRendererDirty(dirty) {
+  rendererDirty = !!dirty;
+}
+
+function confirmDiscardChanges(win) {
+  return dialog.showMessageBox(win, {
+    type: 'warning',
+    buttons: ['Discard Changes', 'Cancel'],
+    defaultId: 1,
+    cancelId: 1,
+    message: 'You have unsaved changes.',
+    detail: 'Your changes will be lost if you continue without saving.',
+  }).then(({ response }) => {
+    if (response === 0) {
+      forceClose = true;
+      return true;
+    }
+    return false;
+  });
+}
+
+function handleBeforeQuit(event) {
+  const win = getMainWindow();
+  if (!win || !rendererDirty || forceClose) return;
+  event.preventDefault();
+  confirmDiscardChanges(win).then((proceed) => {
+    if (proceed) app.quit();
+  });
 }
 
 function sendFileToRenderer(filePath) {
@@ -18,6 +50,7 @@ function sendFileToRenderer(filePath) {
 }
 
 function createWindow(onReadyToShow) {
+  forceClose = false;
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -44,9 +77,19 @@ function createWindow(onReadyToShow) {
     }
   });
 
+  mainWindow.on('close', (e) => {
+    if (!rendererDirty || forceClose) return;
+    e.preventDefault();
+    confirmDiscardChanges(mainWindow).then((proceed) => {
+      if (proceed && mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.close();
+      }
+    });
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 }
 
-module.exports = { createWindow, getMainWindow, sendFileToRenderer };
+module.exports = { createWindow, getMainWindow, sendFileToRenderer, setRendererDirty, handleBeforeQuit };

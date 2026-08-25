@@ -1,5 +1,5 @@
 const { app } = require('electron');
-const { createWindow, getMainWindow, sendFileToRenderer } = require('./main/window');
+const { createWindow, getMainWindow, sendFileToRenderer, handleBeforeQuit } = require('./main/window');
 const { createMenu } = require('./main/menu');
 const { registerIpcHandlers } = require('./main/ipc');
 
@@ -56,11 +56,8 @@ if (!gotTheLock) {
     }
   });
 
-  app.on('before-quit', () => {
-    const win = getMainWindow();
-    if (win) {
-      win.destroy();
-    }
+  app.on('before-quit', (event) => {
+    handleBeforeQuit(event);
   });
 
   app.on('will-quit', () => {

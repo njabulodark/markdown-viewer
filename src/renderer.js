@@ -32,7 +32,10 @@ const btnClearLogs = document.getElementById('btn-clear-logs');
 const btnCloseLogs = document.getElementById('btn-close-logs');
 
 let currentFilePath = null;
+let currentFileName = '';
+let isDirty = false;
 let currentContent = '';
+let lastSavedContent = '';
 let isEditMode = false;
 let isSplitView = false;
 let previewFontSize = 16;
@@ -65,6 +68,27 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function computeDirty() {
+  return getLatestContent() !== lastSavedContent;
+}
+
+function updateDirtyIndicator() {
+  const dirty = computeDirty();
+  if (dirty !== isDirty) {
+    isDirty = dirty;
+    window.electronAPI.notifyDirtyState(dirty);
+  }
+  fileBreadcrumb.textContent = currentFileName ? `${currentFileName}${dirty ? ' •' : ''}` : '';
+  fileBreadcrumb.title = currentFilePath || (currentFileName || '');
+}
+
+async function confirmIfDirty(actionLabel) {
+  if (!isDirty) return true;
+  const proceed = window.confirm(`You have unsaved changes.\n\n${actionLabel} anyway?`);
+  if (!proceed) addLog(`${actionLabel} cancelled (unsaved changes)`, 'info');
+  return proceed;
 }
 
 function toggleLogPanel() {
@@ -119,6 +143,7 @@ window.electronAPI.onMaximizedChanged((isMaximized) => {
 setupWinBtn('btn-close', () => window.electronAPI.closeWindow());
 
 async function openFile() {
+  if (!(await confirmIfDirty('Open a different file'))) return;
   try {
     const result = await window.electronAPI.openFileDialog();
     if (result) {
@@ -151,13 +176,11 @@ async function renderMarkdown(content, filePath) {
       splitPane.classList.add('hidden');
     }
 
-    const fileName = filePath.split(/[\\/]/).pop();
-    fileBreadcrumb.textContent = fileName;
-    fileBreadcrumb.title = filePath;
+    currentFileName = filePath.split(/[\\/]/).pop();
 
     updateWordCount(content);
 
-    addLog(`Opened: ${fileName}`, 'success');
+    addLog(`Opened: ${currentFileName}`, 'success');
     document.getElementById('content-area').scrollTop = 0;
 
     if (filePath && filePath.startsWith('/')) {
@@ -181,6 +204,9 @@ async function renderMarkdown(content, filePath) {
     if (isEditMode) {
       exitEditMode();
     }
+
+    lastSavedContent = content;
+    updateDirtyIndicator();
   } catch (err) {
     statusText.textContent = `Error rendering: ${err.message}`;
   }
@@ -225,6 +251,8 @@ document.addEventListener('drop', async (e) => {
   e.preventDefault();
   dragCounter = 0;
   dropOverlay.classList.add('hidden');
+
+  if (!(await confirmIfDirty('Open the dropped file'))) return;
 
   const files = e.dataTransfer.files;
   if (files.length > 0) {
@@ -375,6 +403,8 @@ async function saveAndRender() {
   }
 
   updateWordCount(editedContent);
+  lastSavedContent = editedContent;
+  updateDirtyIndicator();
   document.getElementById('content-area').scrollTop = 0;
 }
 
@@ -390,15 +420,15 @@ async function saveAs() {
     if (result.success) {
       currentFilePath = result.filePath;
       currentContent = content;
-      const fileName = result.filePath.split(/[\\/]/).pop();
-      fileBreadcrumb.textContent = fileName;
-      fileBreadcrumb.title = result.filePath;
+      lastSavedContent = content;
+      currentFileName = result.filePath.split(/[\\/]/).pop();
+      updateDirtyIndicator();
       btnEdit.classList.remove('hidden');
       btnSplit.classList.remove('hidden');
       fontControls.classList.remove('hidden');
       exportDropdown.classList.remove('hidden');
-      statusText.textContent = `Saved: ${fileName}`;
-      addLog(`Saved As: ${fileName} (${result.filePath})`, 'success');
+      statusText.textContent = `Saved: ${currentFileName}`;
+      addLog(`Saved As: ${currentFileName} (${result.filePath})`, 'success');
     } else if (result.cancelled) {
       addLog('Save As cancelled', 'info');
     }
@@ -444,6 +474,7 @@ async function updateSplitPreview() {
   if (!isSplitView) return;
   const content = markdownEditorSplit.value;
   currentContent = content;
+  updateDirtyIndicator();
 
   if (splitPreviewTimeout) clearTimeout(splitPreviewTimeout);
   splitPreviewTimeout = setTimeout(async () => {
@@ -514,12 +545,18 @@ document.addEventListener('click', (e) => {
 
 markdownEditorSplit.addEventListener('input', updateSplitPreview);
 
+markdownEditor.addEventListener('input', () => {
+  statusText.textContent = 'Editing...';
+  updateDirtyIndicator();
+});
+
 window.electronAPI.onTriggerOpen(openFile);
 window.electronAPI.onTriggerSaveAs(saveAs);
 window.electronAPI.onTriggerExportPDF(exportPDF);
 window.electronAPI.onTriggerExportDocx(exportDocx);
 
 window.electronAPI.onOpenFileFromArgv(async (filePath) => {
+  if (!(await confirmIfDirty('Open the requested file'))) return;
   try {
     const result = await window.electronAPI.readFile(filePath);
     if (result) {
