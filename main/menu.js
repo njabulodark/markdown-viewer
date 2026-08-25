@@ -70,6 +70,14 @@ function buildTemplate() {
         { role: 'quit' },
       ],
     },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+      ],
+    },
   ];
 }
 

@@ -569,6 +569,9 @@ document.addEventListener('mouseup', () => {
   }
 });
 
+attachEditorTabHandling(markdownEditor);
+attachEditorTabHandling(markdownEditorSplit);
+
 btnOpen.addEventListener('mousedown', (e) => e.stopPropagation());
 btnOpen.addEventListener('click', openFile);
 btnEdit.addEventListener('click', enterEditMode);
@@ -592,6 +595,47 @@ document.addEventListener('click', (e) => {
 });
 
 markdownEditorSplit.addEventListener('input', updateSplitPreview);
+
+function attachEditorTabHandling(ta) {
+  ta.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    e.preventDefault();
+    indentSelection(ta, e.shiftKey);
+  });
+}
+
+function indentSelection(ta, outdent) {
+  const { value, selectionStart, selectionEnd } = ta;
+  if (!outdent && selectionStart === selectionEnd) {
+    ta.setRangeText('  ', selectionStart, selectionEnd, 'end');
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    return;
+  }
+  const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
+  let lineEnd = value.indexOf('\n', selectionEnd);
+  if (lineEnd === -1) lineEnd = value.length;
+  const lines = value.slice(lineStart, lineEnd).split('\n');
+  let totalDelta = 0;
+  let firstLineDelta = 0;
+  const transformed = lines.map((line, i) => {
+    if (outdent) {
+      const match = line.match(/^ {1,2}/);
+      const delta = match ? -match[0].length : 0;
+      totalDelta += delta;
+      if (i === 0) firstLineDelta = delta;
+      return match ? line.slice(match[0].length) : line;
+    }
+    totalDelta += 2;
+    if (i === 0) firstLineDelta = 2;
+    return `  ${line}`;
+  });
+  ta.value = value.slice(0, lineStart) + transformed.join('\n') + value.slice(lineEnd);
+  ta.setSelectionRange(
+    Math.max(lineStart, selectionStart + firstLineDelta),
+    Math.max(lineStart, selectionEnd + totalDelta)
+  );
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
 
 markdownEditor.addEventListener('input', () => {
   statusText.textContent = 'Editing...';
