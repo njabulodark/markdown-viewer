@@ -1,15 +1,19 @@
 const { Menu } = require('electron');
 const fs = require('fs');
 const recentFiles = require('./recentFiles');
-const { getMainWindow } = require('./window');
+const { getFocusedWindow, getAnyWindow, createWindow } = require('./window');
+
+function activeWindow() {
+  return getFocusedWindow() || getAnyWindow();
+}
 
 function sendToActiveWindow(channel) {
-  const win = getMainWindow();
+  const win = activeWindow();
   if (win) win.webContents.send(channel);
 }
 
 function openRecentFile(filePath) {
-  const win = getMainWindow();
+  const win = activeWindow();
   if (!win) return;
   win.webContents.send('open-file-argv', filePath);
   if (win.isMinimized()) win.restore();
@@ -42,6 +46,11 @@ function buildTemplate() {
     {
       label: 'File',
       submenu: [
+        {
+          label: 'New Window',
+          accelerator: 'CmdOrCtrl+N',
+          click: () => createWindow(),
+        },
         {
           label: 'Open...',
           accelerator: 'CmdOrCtrl+O',

@@ -1,19 +1,40 @@
-const { BrowserWindow, dialog, app } = require('electron');
+const { BrowserWindow, dialog, app, screen } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const fileWatcher = require('./watcher');
 
-let mainWindow = null;
-let rendererDirty = false;
-let forceClose = false;
+const windows = new Set();
+const dirtyWindows = new WeakSet();
+const forceCloseWindows = new WeakSet();
+const watchedPaths = new Map();
 
-function getMainWindow() {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    return mainWindow;
+function getAllWindows() {
+  return [...windows].filter((win) => !win.isDestroyed());
+}
+
+function getAnyWindow() {
+  return getAllWindows()[0] || null;
+}
+
+function getFocusedWindow() {
+  const focused = BrowserWindow.getFocusedWindow();
+  if (focused && windows.has(focused) && !focused.isDestroyed()) {
+    return focused;
   }
   return null;
 }
 
-function setRendererDirty(dirty) {
-  rendererDirty = !!dirty;
+function setRendererDirty(dirty, win) {
+  if (!win || win.isDestroyed()) return;
+  if (dirty) {
+    dirtyWindows.add(win);
+  } else {
+    dirtyWindows.delete(win);
+  }
+}
+
+function isWindowDirty(win) {
+  return dirtyWindows.has(win);
 }
 
 function confirmDiscardChanges(win) {
@@ -26,7 +47,7 @@ function confirmDiscardChanges(win) {
     detail: 'Your changes will be lost if you continue without saving.',
   }).then(({ response }) => {
     if (response === 0) {
-      forceClose = true;
+      forceCloseWindows.add(win);
       return true;
     }
     return false;
@@ -34,31 +55,71 @@ function confirmDiscardChanges(win) {
 }
 
 function handleBeforeQuit(event) {
-  const win = getMainWindow();
-  if (!win || !rendererDirty || forceClose) return;
+  const dirty = getAllWindows().find((win) => isWindowDirty(win) && !forceCloseWindows.has(win));
+  if (!dirty) return;
   event.preventDefault();
-  confirmDiscardChanges(win).then((proceed) => {
+  confirmDiscardChanges(dirty).then((proceed) => {
     if (proceed) app.quit();
   });
 }
 
 function sendFileToRenderer(filePath) {
-  const win = getMainWindow();
+  const win = getFocusedWindow() || getAnyWindow();
   if (win) {
     win.webContents.send('open-file-argv', filePath);
   }
+  return win || null;
+}
+
+function setWindowWatchedFile(win, filePath) {
+  if (!win || win.isDestroyed()) return;
+  const previous = watchedPaths.get(win);
+  if (previous === filePath) return;
+  if (previous) fileWatcher.unwatchFile(previous);
+  if (!filePath || !path.isAbsolute(filePath) || !fs.existsSync(filePath)) {
+    watchedPaths.delete(win);
+    return;
+  }
+  fileWatcher.watchFile(filePath, () => {
+    if (win.isDestroyed()) return;
+    let content;
+    try {
+      content = fs.readFileSync(filePath, 'utf-8');
+    } catch {
+      win.webContents.send('file-deleted-on-disk', filePath);
+      return;
+    }
+    win.webContents.send('file-changed-on-disk', { filePath, content });
+  });
+  watchedPaths.set(win, filePath);
+}
+
+function nextWindowOptions() {
+  const last = getAnyWindow();
+  if (!last) {
+    return { center: true };
+  }
+  const bounds = last.getBounds();
+  const display = screen.getDisplayMatching(bounds);
+  const work = display.workArea;
+  let x = bounds.x + 48;
+  let y = bounds.y + 48;
+  x = Math.min(x, work.x + work.width - Math.min(bounds.width, 400));
+  y = Math.min(y, work.y + work.height - Math.min(bounds.height, 200));
+  return { x, y, width: bounds.width, height: bounds.height };
 }
 
 function createWindow(onReadyToShow) {
-  forceClose = false;
-  mainWindow = new BrowserWindow({
+  const { center, ...rest } = nextWindowOptions();
+  const win = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 600,
     minHeight: 400,
     titleBarStyle: 'hidden',
     frame: false,
-    center: true,
+    center,
+    ...rest,
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload.js'),
       contextIsolation: true,
@@ -67,29 +128,45 @@ function createWindow(onReadyToShow) {
     backgroundColor: '#FAF8F5',
   });
 
-  mainWindow.loadFile(path.join(__dirname, '..', 'src', 'index.html'));
+  windows.add(win);
 
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-    mainWindow.focus();
+  win.loadFile(path.join(__dirname, '..', 'src', 'index.html'));
+
+  win.once('ready-to-show', () => {
+    win.show();
+    win.focus();
     if (typeof onReadyToShow === 'function') {
       onReadyToShow();
     }
   });
 
-  mainWindow.on('close', (e) => {
-    if (!rendererDirty || forceClose) return;
+  win.on('close', (e) => {
+    if (!dirtyWindows.has(win) || forceCloseWindows.has(win)) return;
     e.preventDefault();
-    confirmDiscardChanges(mainWindow).then((proceed) => {
-      if (proceed && mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.close();
+    confirmDiscardChanges(win).then((proceed) => {
+      if (proceed && !win.isDestroyed()) {
+        win.close();
       }
     });
   });
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
+  win.on('closed', () => {
+    windows.delete(win);
+    dirtyWindows.delete(win);
+    forceCloseWindows.delete(win);
+    const watched = watchedPaths.get(win);
+    if (watched) fileWatcher.unwatchFile(watched);
+    watchedPaths.delete(win);
   });
 }
 
-module.exports = { createWindow, getMainWindow, sendFileToRenderer, setRendererDirty, handleBeforeQuit };
+module.exports = {
+  createWindow,
+  getAllWindows,
+  getAnyWindow,
+  getFocusedWindow,
+  sendFileToRenderer,
+  setRendererDirty,
+  setWindowWatchedFile,
+  handleBeforeQuit,
+};

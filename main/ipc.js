@@ -1,15 +1,18 @@
-const { ipcMain, dialog } = require('electron');
+const { ipcMain, dialog, BrowserWindow } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const HTMLtoDOCX = require('html-to-docx');
 const { renderMarkdown, cleanHtmlForDocx } = require('./markdown');
-const { getMainWindow, setRendererDirty } = require('./window');
+const { setRendererDirty, setWindowWatchedFile } = require('./window');
 const recentFiles = require('./recentFiles');
 const { createMenu } = require('./menu');
-const fileWatcher = require('./watcher');
 
 const WINDOW_BG_LIGHT = '#FAF8F5';
 const WINDOW_BG_DARK = '#201D1B';
+
+function senderWindow(event) {
+  return BrowserWindow.fromWebContents(event.sender);
+}
 
 function rememberRecentFile(filePath) {
   if (!filePath || !path.isAbsolute(filePath)) return;
@@ -20,8 +23,8 @@ function rememberRecentFile(filePath) {
 
 function registerIpcHandlers() {
   // Open file dialog
-  ipcMain.handle('open-file-dialog', async () => {
-    const result = await dialog.showOpenDialog(getMainWindow(), {
+  ipcMain.handle('open-file-dialog', async (event) => {
+    const result = await dialog.showOpenDialog(senderWindow(event), {
       properties: ['openFile'],
       filters: [
         { name: 'Markdown Files', extensions: ['md', 'markdown', 'txt'] },
@@ -71,25 +74,9 @@ function registerIpcHandlers() {
     return true;
   });
 
-  // Watch/unwatch the currently open file for external modifications
-  ipcMain.handle('set-watched-file', (_event, filePath) => {
-    if (!filePath || !path.isAbsolute(filePath) || !fs.existsSync(filePath)) {
-      fileWatcher.stopWatching();
-      return false;
-    }
-    if (fileWatcher.getWatchedPath() === filePath) return true;
-    fileWatcher.watchFile(filePath, () => {
-      const win = getMainWindow();
-      if (!win) return;
-      let content;
-      try {
-        content = fs.readFileSync(filePath, 'utf-8');
-      } catch {
-        win.webContents.send('file-deleted-on-disk', filePath);
-        return;
-      }
-      win.webContents.send('file-changed-on-disk', { filePath, content });
-    });
+  // Watch/unwatch the currently open file for external modifications (per window)
+  ipcMain.handle('set-watched-file', (event, filePath) => {
+    setWindowWatchedFile(senderWindow(event), filePath);
     return true;
   });
 
@@ -109,8 +96,8 @@ function registerIpcHandlers() {
   });
 
   // Save file to disk via Save As dialog
-  ipcMain.handle('save-file-as', async (_event, { content, sourcePath }) => {
-    const win = getMainWindow();
+  ipcMain.handle('save-file-as', async (event, { content, sourcePath }) => {
+    const win = senderWindow(event);
     if (!win) {
       throw new Error('Window not available');
     }
@@ -152,8 +139,8 @@ function registerIpcHandlers() {
   });
 
   // Export to PDF
-  ipcMain.handle('export-pdf', async (_event, sourcePath) => {
-    const win = getMainWindow();
+  ipcMain.handle('export-pdf', async (event, sourcePath) => {
+    const win = senderWindow(event);
     if (!win) {
       throw new Error('Window not available');
     }
@@ -199,8 +186,8 @@ function registerIpcHandlers() {
   });
 
   // Export to DOCX
-  ipcMain.handle('export-docx', async (_event, markdown, sourcePath) => {
-    const win = getMainWindow();
+  ipcMain.handle('export-docx', async (event, markdown, sourcePath) => {
+    const win = senderWindow(event);
     if (!win) {
       throw new Error('Window not available');
     }
@@ -244,27 +231,27 @@ function registerIpcHandlers() {
     }
   });
 
-  // Renderer dirty-state reporting
-  ipcMain.on('dirty-state-changed', (_event, dirty) => {
-    setRendererDirty(dirty);
+  // Renderer dirty-state reporting (per window)
+  ipcMain.on('dirty-state-changed', (event, dirty) => {
+    setRendererDirty(dirty, senderWindow(event));
   });
 
   // Sync native window background with renderer theme
-  ipcMain.on('set-window-background', (_event, isDark) => {
-    const win = getMainWindow();
+  ipcMain.on('set-window-background', (event, isDark) => {
+    const win = senderWindow(event);
     if (win && !win.isDestroyed()) {
       win.setBackgroundColor(isDark ? WINDOW_BG_DARK : WINDOW_BG_LIGHT);
     }
   });
 
   // Window controls
-  ipcMain.on('window-minimize', () => {
-    const win = getMainWindow();
+  ipcMain.on('window-minimize', (event) => {
+    const win = senderWindow(event);
     if (win) win.minimize();
   });
 
-  ipcMain.on('window-maximize', () => {
-    const win = getMainWindow();
+  ipcMain.on('window-maximize', (event) => {
+    const win = senderWindow(event);
     if (!win) return;
     if (win.isMaximized()) {
       win.unmaximize();
@@ -275,8 +262,8 @@ function registerIpcHandlers() {
     win.webContents.send('window-maximized-changed', win.isMaximized());
   });
 
-  ipcMain.on('window-close', () => {
-    const win = getMainWindow();
+  ipcMain.on('window-close', (event) => {
+    const win = senderWindow(event);
     if (win) win.close();
   });
 }

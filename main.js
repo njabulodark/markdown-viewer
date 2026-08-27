@@ -1,6 +1,6 @@
 const { app } = require('electron');
 const path = require('path');
-const { createWindow, getMainWindow, sendFileToRenderer, handleBeforeQuit } = require('./main/window');
+const { createWindow, getAnyWindow, getFocusedWindow, sendFileToRenderer, handleBeforeQuit } = require('./main/window');
 const { createMenu } = require('./main/menu');
 const { registerIpcHandlers } = require('./main/ipc');
 const recentFiles = require('./main/recentFiles');
@@ -31,9 +31,12 @@ if (!gotTheLock) {
     if (filePath) {
       recentFiles.add(filePath);
       createMenu();
-      sendFileToRenderer(filePath);
+      if (!sendFileToRenderer(filePath)) {
+        startupFilePath = filePath;
+        createWindow(handleStartupFile);
+      }
     }
-    const win = getMainWindow();
+    const win = getFocusedWindow() || getAnyWindow();
     if (win) {
       if (win.isMinimized()) win.restore();
       win.focus();
@@ -55,13 +58,15 @@ if (!gotTheLock) {
   app.on('open-file', (_event, filePath) => {
     recentFiles.add(filePath);
     createMenu();
-    const win = getMainWindow();
+    if (!sendFileToRenderer(filePath)) {
+      startupFilePath = filePath;
+      createWindow(handleStartupFile);
+      return;
+    }
+    const win = getFocusedWindow() || getAnyWindow();
     if (win) {
-      sendFileToRenderer(filePath);
       if (win.isMinimized()) win.restore();
       win.focus();
-    } else {
-      startupFilePath = filePath;
     }
   });
 
@@ -85,7 +90,7 @@ if (!gotTheLock) {
   });
 
   app.on('activate', () => {
-    if (!getMainWindow()) {
+    if (!getAnyWindow()) {
       createWindow(handleStartupFile);
     }
   });
