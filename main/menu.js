@@ -82,6 +82,12 @@ function buildTemplate() {
     {
       label: 'View',
       submenu: [
+        {
+          label: 'Table of Contents',
+          accelerator: 'CmdOrCtrl+Shift+O',
+          click: () => sendToActiveWindow('trigger-toggle-toc'),
+        },
+        { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },
         { role: 'zoomOut' },

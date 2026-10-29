@@ -66,6 +66,16 @@
             <div id="export-docx" class="export-menu-item">Export as DOCX</div>
           </div>
         </div>
+        <button id="btn-toc" class="toolbar-btn hidden" title="Table of Contents (Ctrl+Shift+O)" style="-webkit-app-region: no-drag;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"/>
+            <line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/>
+            <line x1="3" y1="12" x2="3.01" y2="12"/>
+            <line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+        </button>
         <button id="btn-theme" class="toolbar-btn" title="Toggle Theme" style="-webkit-app-region: no-drag;">
           <svg id="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -115,6 +125,22 @@
 
     <!-- Main content area -->
     <main id="content-area">
+      <!-- Table of Contents sidebar -->
+      <aside id="toc-sidebar" class="toc-sidebar hidden">
+        <div class="toc-header">
+          <span class="toc-title">On this page</span>
+          <button id="btn-toc-close" class="toc-close" title="Close table of contents">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <nav id="toc-list" class="toc-list"></nav>
+        <div id="toc-empty" class="toc-empty hidden">No headings in this document</div>
+      </aside>
+
+      <div id="content-scroll" class="content-scroll">
       <!-- Welcome screen -->
       <div id="welcome-screen" class="welcome">
         <div class="welcome-inner">
@@ -143,6 +169,7 @@
 
       <!-- Rendered markdown (full-screen mode) -->
       <div id="markdown-content" class="markdown-body hidden"></div>
+      </div>
     </main>
 
     <!-- Diagnostic Log Panel -->

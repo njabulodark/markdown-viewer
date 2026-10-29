@@ -22,6 +22,12 @@ const exportBtn = document.getElementById('btn-export');
 const exportMenu = document.getElementById('export-menu');
 const exportPdfBtn = document.getElementById('export-pdf');
 const exportDocxBtn = document.getElementById('export-docx');
+const contentScroll = document.getElementById('content-scroll');
+const tocSidebar = document.getElementById('toc-sidebar');
+const tocList = document.getElementById('toc-list');
+const tocEmpty = document.getElementById('toc-empty');
+const btnToc = document.getElementById('btn-toc');
+const btnTocClose = document.getElementById('btn-toc-close');
 
 const logPanel = document.getElementById('log-panel');
 const logEntries = document.getElementById('log-entries');
@@ -226,7 +232,7 @@ async function renderMarkdown(content, filePath) {
     updateWordCount(content);
 
     addLog(`Opened: ${currentFileName}`, 'success');
-    document.getElementById('content-area').scrollTop = 0;
+    contentScroll.scrollTop = 0;
 
     if (filePath && filePath.startsWith('/')) {
       currentFilePath = null;
@@ -236,6 +242,7 @@ async function renderMarkdown(content, filePath) {
       btnSplit.classList.add('hidden');
       fontControls.classList.add('hidden');
       exportDropdown.classList.add('hidden');
+      btnToc.classList.add('hidden');
     } else {
       currentFilePath = filePath || null;
       currentContent = content;
@@ -244,6 +251,7 @@ async function renderMarkdown(content, filePath) {
       btnSplit.classList.remove('hidden');
       fontControls.classList.remove('hidden');
       exportDropdown.classList.remove('hidden');
+      btnToc.classList.remove('hidden');
     }
 
     if (isEditMode) {
@@ -253,6 +261,9 @@ async function renderMarkdown(content, filePath) {
     lastSavedContent = content;
     updateDirtyIndicator();
     updateWatchedFile();
+
+    buildToc(getActiveContentContainer(), html);
+    updateTocVisibility();
   } catch (err) {
     statusText.textContent = `Error rendering: ${err.message}`;
   }
@@ -271,6 +282,111 @@ function updateWordCount(content) {
   const words = content.trim().split(/\s+/).length;
   const lines = content.split('\n').length;
   wordCountEl.textContent = `${words} words · ${lines} lines`;
+}
+
+// ============================================
+// Table of Contents
+// ============================================
+const TOC_STORAGE_KEY = 'markdown-viewer-toc';
+let tocVisible = localStorage.getItem(TOC_STORAGE_KEY) === '1';
+let tocHeadingEls = [];
+let tocBuildSeq = 0;
+let tocScrollRafId = 0;
+
+function getActiveContentContainer() {
+  return isSplitView ? markdownContentSplit : markdownContent;
+}
+
+function getActiveScrollContainer() {
+  return isSplitView ? markdownContentSplit : contentScroll;
+}
+
+async function buildToc(container, html) {
+  const seq = ++tocBuildSeq;
+  let headings = [];
+  try {
+    headings = await window.electronAPI.extractHeadings(html);
+  } catch {
+    headings = [];
+  }
+  if (seq !== tocBuildSeq) return;
+
+  tocHeadingEls = Array.from(container.querySelectorAll('h1, h2, h3, h4'));
+  tocHeadingEls.forEach((el, i) => {
+    el.classList.remove('toc-highlight');
+    if (headings[i]) el.id = headings[i].slug;
+  });
+
+  tocList.innerHTML = '';
+  headings.forEach((h) => {
+    const link = document.createElement('a>');
+    link.href = `#${h.slug}`;
+    link.className = `toc-item toc-level-${h.level}`;
+    link.textContent = h.text;
+    link.title = h.text;
+    tocList.appendChild(link);
+  });
+  tocEmpty.classList.toggle('hidden', headings.length > 0);
+  updateActiveTocItem();
+}
+
+function scrollToTocHeading(el) {
+  const scroller = getActiveScrollContainer();
+  const top = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 12;
+  scroller.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
+  el.classList.remove('toc-highlight');
+  void el.offsetWidth;
+  el.classList.add('toc-highlight');
+}
+
+function updateActiveTocItem() {
+  if (tocSidebar.classList.contains('hidden') || tocHeadingEls.length === 0) return;
+  const scroller = getActiveScrollContainer();
+  const threshold = 80;
+  const scrollerTop = scroller.getBoundingClientRect().top;
+  let activeIndex = 0;
+  tocHeadingEls.forEach((el, i) => {
+    if (el.getBoundingClientRect().top - scrollerTop <= threshold) activeIndex = i;
+  });
+
+  const items = tocList.children;
+  for (let i = 0; i < items.length; i++) {
+    items[i].classList.toggle('toc-active', i === activeIndex);
+  }
+  const activeItem = items[activeIndex];
+  if (activeItem) {
+    const sidebarRect = tocSidebar.getBoundingClientRect();
+    const itemRect = activeItem.getBoundingClientRect();
+    if (itemRect.top < sidebarRect.top + 44 || itemRect.bottom > sidebarRect.bottom - 12) {
+      activeItem.scrollIntoView({ block: 'nearest' });
+    }
+  }
+}
+
+function updateTocVisibility() {
+  const hasDocument = Boolean(currentFileName) || Boolean(currentContent);
+  tocSidebar.classList.toggle('hidden', !(tocVisible && hasDocument && !isEditMode));
+  btnToc.classList.toggle('active', tocVisible);
+}
+
+function setTocVisible(visible) {
+  tocVisible = visible;
+  localStorage.setItem(TOC_STORAGE_KEY, visible ? '1' : '0');
+  updateTocVisibility();
+  if (visible) updateActiveTocItem();
+}
+
+function toggleToc() {
+  setTocVisible(!tocVisible);
+}
+
+function onTocScrollerScroll() {
+  if (!tocScrollRafId) {
+    tocScrollRafId = requestAnimationFrame(() => {
+      tocScrollRafId = 0;
+      updateActiveTocItem();
+    });
+  }
 }
 
 let dragCounter = 0;
@@ -326,7 +442,8 @@ function enterEditMode() {
   btnEdit.classList.add('hidden');
   btnSave.classList.remove('hidden');
   statusText.textContent = 'Editing...';
-  document.getElementById('content-area').scrollTop = 0;
+  contentScroll.scrollTop = 0;
+  updateTocVisibility();
 }
 
 function exitEditMode() {
@@ -339,6 +456,7 @@ function exitEditMode() {
   markdownEditor.classList.add('hidden');
   btnEdit.classList.remove('hidden');
   btnSave.classList.add('hidden');
+  updateTocVisibility();
 }
 
 function toggleExportMenu() {
@@ -451,7 +569,10 @@ async function saveAndRender() {
   updateWordCount(editedContent);
   lastSavedContent = editedContent;
   updateDirtyIndicator();
-  document.getElementById('content-area').scrollTop = 0;
+  contentScroll.scrollTop = 0;
+
+  buildToc(getActiveContentContainer(), html);
+  updateTocVisibility();
 }
 
 async function saveAs() {
@@ -514,6 +635,9 @@ async function toggleSplitView() {
     btnSave.classList.add('hidden');
     statusText.textContent = 'Preview';
   }
+
+  buildToc(getActiveContentContainer(), getActiveContentContainer().innerHTML);
+  updateTocVisibility();
 }
 
 let splitPreviewTimeout = null;
@@ -531,6 +655,7 @@ async function updateSplitPreview() {
       markdownContentSplit.innerHTML = html;
       wrapTables(markdownContentSplit);
       updateWordCount(content);
+      buildToc(markdownContentSplit, html);
     } catch (err) {
       statusText.textContent = `Render error: ${err.message}`;
     }
@@ -596,6 +721,19 @@ document.addEventListener('click', (e) => {
 
 markdownEditorSplit.addEventListener('input', updateSplitPreview);
 
+btnToc.addEventListener('click', toggleToc);
+btnTocClose.addEventListener('click', () => setTocVisible(false));
+tocList.addEventListener('click', (e) => {
+  const link = e.target.closest('.toc-item');
+  if (!link) return;
+  e.preventDefault();
+  const idx = Array.from(tocList.children).indexOf(link);
+  const heading = tocHeadingEls[idx];
+  if (heading) scrollToTocHeading(heading);
+});
+contentScroll.addEventListener('scroll', onTocScrollerScroll, { passive: true });
+markdownContentSplit.addEventListener('scroll', onTocScrollerScroll, { passive: true });
+
 function attachEditorTabHandling(ta) {
   ta.addEventListener('keydown', (e) => {
     if (e.key !== 'Tab') return;
@@ -646,6 +784,7 @@ window.electronAPI.onTriggerOpen(openFile);
 window.electronAPI.onTriggerSaveAs(saveAs);
 window.electronAPI.onTriggerExportPDF(exportPDF);
 window.electronAPI.onTriggerExportDocx(exportDocx);
+window.electronAPI.onTriggerToggleToc(toggleToc);
 
 window.electronAPI.onOpenFileFromArgv(async (filePath) => {
   if (!(await confirmIfDirty('Open the requested file'))) return;
@@ -684,6 +823,10 @@ window.electronAPI.onFileDeletedOnDisk((filePath) => {
 });
 
 document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'o') {
+    e.preventDefault();
+    toggleToc();
+  }
   if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
     e.preventDefault();
     openFile();

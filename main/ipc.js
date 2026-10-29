@@ -2,7 +2,7 @@ const { ipcMain, dialog, BrowserWindow } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const HTMLtoDOCX = require('html-to-docx');
-const { renderMarkdown, cleanHtmlForDocx } = require('./markdown');
+const { renderMarkdown, cleanHtmlForDocx, extractHeadings } = require('./markdown');
 const { setRendererDirty, setWindowWatchedFile } = require('./window');
 const recentFiles = require('./recentFiles');
 const { createMenu } = require('./menu');
@@ -83,6 +83,11 @@ function registerIpcHandlers() {
   // Render markdown to HTML
   ipcMain.handle('render-markdown', (_event, md) => {
     return renderMarkdown(md);
+  });
+
+  // Extract a heading outline from rendered HTML (for the table of contents)
+  ipcMain.handle('extract-headings', (_event, html) => {
+    return extractHeadings(html);
   });
 
   // Save file to disk

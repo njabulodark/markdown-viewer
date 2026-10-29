@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
   openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
   renderMarkdown: (md) => ipcRenderer.invoke('render-markdown', md),
+  extractHeadings: (html) => ipcRenderer.invoke('extract-headings', html),
   saveFile: (filePath, content) => ipcRenderer.invoke('save-file', { filePath, content }),
   saveFileAs: (content, sourcePath) => ipcRenderer.invoke('save-file-as', { content, sourcePath }),
   notifyDirtyState: (dirty) => ipcRenderer.send('dirty-state-changed', dirty),
@@ -47,5 +48,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onOpenFileFromArgv: (callback) => {
     ipcRenderer.removeAllListeners('open-file-argv');
     ipcRenderer.on('open-file-argv', (_event, filePath) => callback(filePath));
+  },
+  onTriggerToggleToc: (callback) => {
+    ipcRenderer.removeAllListeners('trigger-toggle-toc');
+    ipcRenderer.on('trigger-toggle-toc', () => callback());
   },
 });
