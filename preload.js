@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
   openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
+  listDirectory: (dirPath) => ipcRenderer.invoke('list-directory', dirPath),
   renderMarkdown: (md) => ipcRenderer.invoke('render-markdown', md),
   extractHeadings: (html) => ipcRenderer.invoke('extract-headings', html),
   saveFile: (filePath, content) => ipcRenderer.invoke('save-file', { filePath, content }),

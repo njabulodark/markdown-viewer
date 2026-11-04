@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const HTMLtoDOCX = require('html-to-docx');
 const { renderMarkdown, cleanHtmlForDocx, extractHeadings } = require('./markdown');
+const { listDirectory } = require('./directory');
 const { setRendererDirty, setWindowWatchedFile } = require('./window');
 const recentFiles = require('./recentFiles');
 const { createMenu } = require('./menu');
@@ -52,6 +53,18 @@ function registerIpcHandlers() {
       return { content, filePath };
     } catch (err) {
       throw new Error(`Failed to read file: ${err.message}`, { cause: err });
+    }
+  });
+
+  // List a directory's subfolders and markdown files (for the file tree)
+  ipcMain.handle('list-directory', (_event, dirPath) => {
+    if (!dirPath || !path.isAbsolute(dirPath)) {
+      throw new Error('Invalid directory path');
+    }
+    try {
+      return listDirectory(dirPath);
+    } catch (err) {
+      throw new Error(`Failed to list directory: ${err.message}`, { cause: err });
     }
   });
 

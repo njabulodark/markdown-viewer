@@ -50,6 +50,10 @@ any change to `main.js`, `preload.js`, or `src/*` requires restarting `npm start
 - **Open a file:** click the folder button, press `Ctrl+O`, drag & drop a file, or
   double-click a `.md` file (file association is registered by the installer).
 - **Recent files:** `File` → `Open Recent` keeps the last 10 opened documents.
+- **File directory:** the folder button in the title bar toggles a left-side panel
+  listing the subfolders and markdown files (`.md` / `.markdown` / `.txt`) of the
+  folder containing the open document. Expand folders to browse; click a file to open
+  it. The refresh button re-scans; the panel state is remembered between launches.
 - **Multiple windows:** `Ctrl+N` (or `File` → `New Window`) opens another window. Each
   window shows its own file and tracks its own unsaved changes and live reload, so you
   can have several documents open side by side. Menu commands (Open, Save As, Export)
@@ -109,6 +113,7 @@ markdown-viewer/
 │   ├── window.js      # Window registry: creation, cascade, per-window dirty state
 │   ├── menu.js        # Application menu (targets the focused window)
 │   ├── ipc.js         # All IPC handlers (file IO, PDF/DOCX export, window controls)
+│   ├── directory.js   # Directory listing for the file tree (md files + subfolders)
 │   ├── watcher.js     # Per-file change watchers (multiple paths at once)
 │   └── recentFiles.js # Persisted recent-files store
 ├── preload.js         # Context-isolated bridge exposing window.electronAPI

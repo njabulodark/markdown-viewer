@@ -91,7 +91,6 @@ body {
   background: var(--bg-toolbar);
   backdrop-filter: blur(12px);
   -webkit-app-region: drag;
-  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   gap: 12px;
 }
@@ -138,11 +137,33 @@ body {
   text-align: center;
 }
 
-.titlebar-right {
+.toolbar {
   display: flex;
   align-items: center;
   gap: 4px;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.toolbar-group + .toolbar-group {
+  border-left: 1px solid var(--border-strong);
+  margin-left: 8px;
+  padding-left: 8px;
+}
+
+.toolbar-theme {
+  margin-left: auto;
 }
 
 .toolbar-btn {
@@ -211,9 +232,6 @@ body {
   display: flex;
   align-items: center;
   gap: 2px;
-  margin-left: 4px;
-  padding-left: 8px;
-  border-left: 1px solid var(--border-strong);
 }
 
 .font-btn {
@@ -270,7 +288,7 @@ body {
 /* === Drop Overlay === */
 .drop-overlay {
   position: fixed;
-  inset: 48px 0 28px 0;
+  inset: 88px 0 28px 0;
   background: var(--bg-overlay);
   backdrop-filter: blur(8px);
   display: flex;
@@ -464,6 +482,160 @@ body {
 .toc-highlight {
   animation: tocFlash 0.9s ease-out;
   border-radius: 4px;
+}
+
+/* === File Directory Sidebar === */
+.file-tree-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-toolbar);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.file-tree-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.file-tree-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.file-tree-sidebar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+.file-tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 6px 16px;
+  position: sticky;
+  top: 0;
+  background: var(--bg-toolbar);
+  z-index: 1;
+}
+
+.file-tree-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+.file-tree-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.file-tree-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 5px 7px;
+  border-radius: 5px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.file-tree-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.file-tree-root {
+  padding: 2px 16px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-tree-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px 16px;
+}
+
+.file-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.file-tree-item:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.file-tree-item.file-tree-active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.file-tree-item.file-tree-active:hover {
+  color: var(--accent);
+}
+
+.file-tree-caret {
+  flex-shrink: 0;
+  width: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  transition: transform 0.12s ease;
+}
+
+.file-tree-item.expanded .file-tree-caret {
+  transform: rotate(90deg);
+}
+
+.file-tree-caret-spacer {
+  flex-shrink: 0;
+  width: 14px;
+}
+
+.file-tree-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--text-tertiary);
+}
+
+.file-tree-item.file-tree-active .file-tree-icon {
+  color: var(--accent);
+}
+
+.file-tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-tree-empty {
+  padding: 8px 16px 16px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-tertiary);
 }
 
 /* === Welcome Screen === */
@@ -999,6 +1171,7 @@ body {
   }
 
   .titlebar,
+  .toolbar,
   .statusbar,
   .drop-overlay,
   .export-dropdown,

@@ -27,30 +27,26 @@
       <div class="titlebar-center">
         <span id="file-breadcrumb" class="breadcrumb"></span>
       </div>
-      <div class="titlebar-right">
+      <div class="window-controls" style="-webkit-app-region: no-drag;">
+        <button id="btn-minimize" class="win-btn" title="Minimize" style="-webkit-app-region: no-drag;">
+          <svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+        <button id="btn-maximize" class="win-btn" title="Maximize" style="-webkit-app-region: no-drag;">
+          <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+        <button id="btn-close" class="win-btn win-btn-close" title="Close" style="-webkit-app-region: no-drag;">
+          <svg width="10" height="10" viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="2" x2="2" y2="8" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-group">
         <button id="btn-open" class="toolbar-btn" title="Open File (Ctrl+O)" style="-webkit-app-region: no-drag;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
-        </button>
-        <button id="btn-edit" class="toolbar-btn hidden" title="Edit Markdown (Ctrl+E)" style="-webkit-app-region: no-drag;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
-        <button id="btn-save" class="toolbar-btn hidden" title="Save & Render (Ctrl+S)" style="-webkit-app-region: no-drag;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-            <polyline points="17 21 17 13 7 13 7 21"/>
-            <polyline points="9 3 15 3 15 9"/>
-          </svg>
-        </button>
-        <button id="btn-split" class="toolbar-btn hidden" title="Toggle Split View (Ctrl+\)" style="-webkit-app-region: no-drag;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <line x1="12" y1="3" x2="12" y2="21"/>
           </svg>
         </button>
         <div class="export-dropdown hidden" id="export-dropdown" style="-webkit-app-region: no-drag;">
@@ -66,6 +62,28 @@
             <div id="export-docx" class="export-menu-item">Export as DOCX</div>
           </div>
         </div>
+      </div>
+      <div class="toolbar-group hidden">
+        <button id="btn-edit" class="toolbar-btn hidden" title="Edit Markdown (Ctrl+E)" style="-webkit-app-region: no-drag;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button id="btn-save" class="toolbar-btn hidden" title="Save & Render (Ctrl+S)" style="-webkit-app-region: no-drag;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="9 3 15 3 15 9"/>
+          </svg>
+        </button>
+      </div>
+      <div class="toolbar-group hidden">
+        <button id="btn-files" class="toolbar-btn hidden" title="File Directory" style="-webkit-app-region: no-drag;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </button>
         <button id="btn-toc" class="toolbar-btn hidden" title="Table of Contents (Ctrl+Shift+O)" style="-webkit-app-region: no-drag;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="8" y1="6" x2="21" y2="6"/>
@@ -76,39 +94,36 @@
             <line x1="3" y1="18" x2="3.01" y2="18"/>
           </svg>
         </button>
-        <button id="btn-theme" class="toolbar-btn" title="Toggle Theme" style="-webkit-app-region: no-drag;">
-          <svg id="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
-          <svg id="theme-icon-sun" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="4"/>
-            <line x1="12" y1="2" x2="12" y2="5"/>
-            <line x1="12" y1="19" x2="12" y2="22"/>
-            <line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/>
-            <line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/>
-            <line x1="2" y1="12" x2="5" y2="12"/>
-            <line x1="19" y1="12" x2="22" y2="12"/>
-            <line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/>
-            <line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/>
+        <button id="btn-split" class="toolbar-btn hidden" title="Toggle Split View (Ctrl+\)" style="-webkit-app-region: no-drag;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <line x1="12" y1="3" x2="12" y2="21"/>
           </svg>
         </button>
+      </div>
+      <div class="toolbar-group hidden">
         <div class="font-controls hidden" id="font-controls" style="-webkit-app-region: no-drag;">
           <button id="btn-font-down" class="toolbar-btn font-btn" title="Decrease Font Size">A−</button>
           <span id="font-size-label" class="font-size-label">16px</span>
           <button id="btn-font-up" class="toolbar-btn font-btn" title="Increase Font Size">A+</button>
         </div>
-        <div class="window-controls" style="-webkit-app-region: no-drag;">
-          <button id="btn-minimize" class="win-btn" title="Minimize" style="-webkit-app-region: no-drag;">
-            <svg width="10" height="10" viewBox="0 0 10 10"><line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" stroke-width="1.2"/></svg>
-          </button>
-          <button id="btn-maximize" class="win-btn" title="Maximize" style="-webkit-app-region: no-drag;">
-            <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
-          </button>
-          <button id="btn-close" class="win-btn win-btn-close" title="Close" style="-webkit-app-region: no-drag;">
-            <svg width="10" height="10" viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="2" x2="2" y2="8" stroke="currentColor" stroke-width="1.2"/></svg>
-          </button>
-        </div>
       </div>
+      <button id="btn-theme" class="toolbar-btn toolbar-theme" title="Toggle Theme" style="-webkit-app-region: no-drag;">
+        <svg id="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <svg id="theme-icon-sun" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="4"/>
+          <line x1="12" y1="2" x2="12" y2="5"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/>
+          <line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/>
+          <line x1="2" y1="12" x2="5" y2="12"/>
+          <line x1="19" y1="12" x2="22" y2="12"/>
+          <line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/>
+          <line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/>
+        </svg>
+      </button>
     </div>
 
     <!-- Drop zone overlay -->
@@ -125,6 +140,30 @@
 
     <!-- Main content area -->
     <main id="content-area">
+      <!-- File Directory sidebar -->
+      <aside id="file-tree-sidebar" class="file-tree-sidebar hidden">
+        <div class="file-tree-header">
+          <span class="file-tree-title">Files</span>
+          <div class="file-tree-actions">
+            <button id="btn-files-refresh" class="file-tree-btn" title="Refresh directory">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+            </button>
+            <button id="btn-files-close" class="file-tree-btn" title="Close file directory">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div id="file-tree-root" class="file-tree-root"></div>
+        <div id="file-tree" class="file-tree-list"></div>
+        <div id="file-tree-empty" class="file-tree-empty hidden">No markdown files in this folder</div>
+      </aside>
+
       <!-- Table of Contents sidebar -->
       <aside id="toc-sidebar" class="toc-sidebar hidden">
         <div class="toc-header">

@@ -28,6 +28,13 @@ const tocList = document.getElementById('toc-list');
 const tocEmpty = document.getElementById('toc-empty');
 const btnToc = document.getElementById('btn-toc');
 const btnTocClose = document.getElementById('btn-toc-close');
+const fileTreeSidebar = document.getElementById('file-tree-sidebar');
+const fileTreeRoot = document.getElementById('file-tree-root');
+const fileTreeList = document.getElementById('file-tree');
+const fileTreeEmpty = document.getElementById('file-tree-empty');
+const btnFiles = document.getElementById('btn-files');
+const btnFilesRefresh = document.getElementById('btn-files-refresh');
+const btnFilesClose = document.getElementById('btn-files-close');
 
 const logPanel = document.getElementById('log-panel');
 const logEntries = document.getElementById('log-entries');
@@ -41,6 +48,13 @@ const THEME_KEY = 'markdown-viewer-theme';
 const btnTheme = document.getElementById('btn-theme');
 const iconMoon = document.getElementById('theme-icon-moon');
 const iconSun = document.getElementById('theme-icon-sun');
+
+function syncToolbarGroups() {
+  document.querySelectorAll('.toolbar-group').forEach((group) => {
+    const hasVisible = [...group.children].some((child) => !child.classList.contains('hidden'));
+    group.classList.toggle('hidden', !hasVisible);
+  });
+}
 
 function applyTheme(theme, persist) {
   document.documentElement.dataset.theme = theme;
@@ -237,6 +251,7 @@ async function renderMarkdown(content, filePath) {
     if (filePath && filePath.startsWith('/')) {
       currentFilePath = null;
       currentContent = content;
+      btnFiles.classList.add('hidden');
       btnEdit.classList.add('hidden');
       btnSave.classList.add('hidden');
       btnSplit.classList.add('hidden');
@@ -246,6 +261,7 @@ async function renderMarkdown(content, filePath) {
     } else {
       currentFilePath = filePath || null;
       currentContent = content;
+      btnFiles.classList.remove('hidden');
       btnEdit.classList.remove('hidden');
       btnSave.classList.add('hidden');
       btnSplit.classList.remove('hidden');
@@ -254,6 +270,8 @@ async function renderMarkdown(content, filePath) {
       btnToc.classList.remove('hidden');
     }
 
+    syncToolbarGroups();
+
     if (isEditMode) {
       exitEditMode();
     }
@@ -261,6 +279,7 @@ async function renderMarkdown(content, filePath) {
     lastSavedContent = content;
     updateDirtyIndicator();
     updateWatchedFile();
+    await updateFileTreeForPath(currentFilePath);
 
     buildToc(getActiveContentContainer(), html);
     updateTocVisibility();
@@ -389,6 +408,163 @@ function onTocScrollerScroll() {
   }
 }
 
+// ============================================
+// File Directory
+// ============================================
+const FILETREE_KEY = 'markdown-viewer-filetree';
+let fileTreeVisible = localStorage.getItem(FILETREE_KEY) === '1';
+let currentDir = null;
+const fileTreeCache = new Map();
+const expandedDirs = new Set();
+
+const FOLDER_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+const FILE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+const CARET_SVG = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>';
+
+function dirOfPath(p) {
+  const dir = p.replace(/[\\/][^\\/]+$/, '');
+  return /^[a-zA-Z]:$/.test(dir) ? `${dir}\\` : dir;
+}
+
+function dirLabel(dirPath) {
+  const parts = dirPath.split(/[\\/]/).filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : dirPath;
+}
+
+async function loadDirectory(dirPath) {
+  if (fileTreeCache.has(dirPath)) return fileTreeCache.get(dirPath);
+  let entries;
+  try {
+    entries = await window.electronAPI.listDirectory(dirPath);
+  } catch (err) {
+    addLog(`File directory error: ${err.message}`, 'error');
+    entries = [];
+  }
+  fileTreeCache.set(dirPath, entries);
+  return entries;
+}
+
+function renderEntries(entries, depth) {
+  const frag = document.createDocumentFragment();
+  for (const entry of entries) {
+    const row = document.createElement('div');
+    row.className = 'file-tree-item';
+    row.style.paddingLeft = `${8 + depth * 14}px`;
+    row.title = entry.path;
+
+    const expanded = entry.isDir && expandedDirs.has(entry.path);
+    if (entry.isDir) {
+      if (expanded) row.classList.add('expanded');
+      const caret = document.createElement('span');
+      caret.className = 'file-tree-caret';
+      caret.innerHTML = CARET_SVG;
+      row.appendChild(caret);
+    } else {
+      const spacer = document.createElement('span');
+      spacer.className = 'file-tree-caret-spacer';
+      row.appendChild(spacer);
+      if (entry.path === currentFilePath) row.classList.add('file-tree-active');
+    }
+
+    const icon = document.createElement('span');
+    icon.className = 'file-tree-icon';
+    icon.innerHTML = entry.isDir ? FOLDER_SVG : FILE_SVG;
+    row.appendChild(icon);
+
+    const name = document.createElement('span');
+    name.className = 'file-tree-name';
+    name.textContent = entry.name;
+    row.appendChild(name);
+
+    if (entry.isDir) {
+      row.addEventListener('click', () => toggleDir(entry.path));
+    } else {
+      row.addEventListener('click', () => openFileFromTree(entry.path));
+    }
+
+    frag.appendChild(row);
+    if (entry.isDir && expanded) {
+      const children = fileTreeCache.get(entry.path);
+      if (children) frag.appendChild(renderEntries(children, depth + 1));
+    }
+  }
+  return frag;
+}
+
+function renderFileTree() {
+  fileTreeRoot.textContent = currentDir ? dirLabel(currentDir) : '';
+  fileTreeList.innerHTML = '';
+  const rootEntries = currentDir ? (fileTreeCache.get(currentDir) || []) : [];
+  fileTreeList.appendChild(renderEntries(rootEntries, 0));
+  fileTreeEmpty.classList.toggle('hidden', rootEntries.length > 0);
+  updateFileTreeVisibility();
+}
+
+async function updateFileTreeForPath(filePath) {
+  if (!isAbsoluteFsPath(filePath)) return;
+  const dir = dirOfPath(filePath);
+  if (dir !== currentDir) {
+    currentDir = dir;
+    fileTreeCache.clear();
+    expandedDirs.clear();
+    await loadDirectory(dir);
+  }
+  renderFileTree();
+}
+
+async function toggleDir(dirPath) {
+  if (expandedDirs.has(dirPath)) {
+    expandedDirs.delete(dirPath);
+  } else {
+    expandedDirs.add(dirPath);
+    await loadDirectory(dirPath);
+  }
+  renderFileTree();
+}
+
+async function refreshFileTree() {
+  if (!currentDir) return;
+  fileTreeCache.clear();
+  await loadDirectory(currentDir);
+  for (const dir of [...expandedDirs]) {
+    await loadDirectory(dir);
+  }
+  renderFileTree();
+  addLog('File directory refreshed', 'info');
+}
+
+async function openFileFromTree(filePath) {
+  if (filePath === currentFilePath) return;
+  if (!(await confirmIfDirty('Open the selected file'))) return;
+  try {
+    const result = await window.electronAPI.readFile(filePath);
+    if (result) renderMarkdown(result.content, result.filePath);
+  } catch (err) {
+    addLog(`Open File Error: ${err.message}`, 'error');
+  }
+}
+
+function updateFileTreeVisibility() {
+  fileTreeSidebar.classList.toggle('hidden', !(fileTreeVisible && currentDir));
+  btnFiles.classList.toggle('active', fileTreeVisible);
+}
+
+function setFileTreeVisible(visible) {
+  fileTreeVisible = visible;
+  localStorage.setItem(FILETREE_KEY, visible ? '1' : '0');
+  if (visible && currentDir && !fileTreeCache.has(currentDir)) {
+    loadDirectory(currentDir).then(renderFileTree);
+  }
+  updateFileTreeVisibility();
+}
+
+updateFileTreeVisibility();
+
+btnFiles.addEventListener('mousedown', (e) => e.stopPropagation());
+btnFiles.addEventListener('click', () => setFileTreeVisible(!fileTreeVisible));
+btnFilesClose.addEventListener('click', () => setFileTreeVisible(false));
+btnFilesRefresh.addEventListener('click', () => { refreshFileTree(); });
+
 let dragCounter = 0;
 
 document.addEventListener('dragenter', (e) => {
@@ -441,6 +617,7 @@ function enterEditMode() {
   markdownEditor.classList.remove('hidden');
   btnEdit.classList.add('hidden');
   btnSave.classList.remove('hidden');
+  syncToolbarGroups();
   statusText.textContent = 'Editing...';
   contentScroll.scrollTop = 0;
   updateTocVisibility();
@@ -456,6 +633,7 @@ function exitEditMode() {
   markdownEditor.classList.add('hidden');
   btnEdit.classList.remove('hidden');
   btnSave.classList.add('hidden');
+  syncToolbarGroups();
   updateTocVisibility();
 }
 
@@ -598,6 +776,7 @@ async function saveAs() {
       addLog(`Saved As: ${currentFileName} (${result.filePath})`, 'success');
       window.electronAPI.addRecentFile(result.filePath);
       updateWatchedFile();
+      await updateFileTreeForPath(result.filePath);
     } else if (result.cancelled) {
       addLog('Save As cancelled', 'info');
     }
